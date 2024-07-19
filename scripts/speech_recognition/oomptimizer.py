@@ -239,6 +239,7 @@ def oomptimizer(
     start_batch_size: int,
     labels_per_second: int,
     memory_fraction: float,
+    device: str,
 ):
     """
     OOMptimizer finds the optimal batch sizes for training your model with bucketing dataloading.
@@ -266,7 +267,6 @@ def oomptimizer(
         )
         sys.exit(1)
     logging.setLevel(logging.CRITICAL)
-    device = "cuda"
     torch.cuda.set_per_process_memory_fraction(memory_fraction, device)
 
     trainer = pl.Trainer(barebones=True)
