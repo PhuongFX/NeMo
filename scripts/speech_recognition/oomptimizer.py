@@ -221,6 +221,14 @@ class FloatList(click.Option):
     "By default we force 5% memory to be unused to account for non-training-loop related CUDA memory usage"
     "in actual training scripts.",
 )
+@click.option(
+    "-d",
+    "--device",
+    default="cuda:0",
+    help="Device string to be passed to torch.device; due to MEMORY_FRACTION option, "
+    "it must specify the device index (e.g. cuda:0). "
+    "You can also leave the default index and select a specific GPU using env var CUDA_VISIBLE_DEVICES=<idx>",
+)
 def oomptimizer(
     pretrained_name: str | None,
     module_name: str | None,
