@@ -96,7 +96,7 @@ class LhotseDataLoadingConfig:
     pin_memory: bool = False
     channel_selector: int | str | None = None
     min_tps: int = -1  # allowed tokens per second
-    max_tps: float = 1_000_000
+    max_tps: float = float("inf")
 
     # 4. Optional Lhotse data augmentation.
     #   a. On-the-fly noise/audio mixing.
@@ -195,8 +195,7 @@ def get_lhotse_dataloader_from_config(
 
         if not isinstance(tokenizer, TokenizerWrapper):
             tokenizer = TokenizerWrapper(tokenizer)
-        # Note this code can also pre-tokenize the text in cuts, but for now we disable it with apply_fn.
-        cuts = cuts.map(partial(tokenize, tokenizer=tokenizer), apply_fn=is_text)
+        cuts = cuts.map(partial(tokenize, tokenizer=tokenizer))
         cuts = cuts.filter(TokenPerSecondFilter(config.min_tps, config.max_tps))
 
     # 2. Optional augmentations.
@@ -286,6 +285,7 @@ def get_lhotse_dataloader_from_config(
         # Determine the bucket duration bins
         sampler = DynamicBucketingSampler(
             cuts,
+            concurrent=True,
             constraint=constraint,
             shuffle=config.shuffle,
             drop_last=config.drop_last,
@@ -538,7 +538,9 @@ class TokenPerSecondFilter:
     def __call__(self, example) -> bool:
         if isinstance(example, Cut):
             num_tokens = sum(len(s.tokens) for s in example.supervisions)
-            return self.tps_min <= num_tokens <= self.tps_max
+            tps = num_tokens / example.duration
+            ans = self.tps_min <= tps <= self.tps_max
+            return ans
         else:
             return True  # does not apply to text etc.
 
